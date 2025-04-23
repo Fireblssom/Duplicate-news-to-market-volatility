@@ -190,6 +190,8 @@ else:
                     st.subheader(f"{chart_type} - News Redundancy vs S&P 500 Volatility")
                     chart = create_plot(news_series, vol_series, chart_type)
                     st.plotly_chart(chart)
+                    st.write("Downloaded data:", df.head(), df.tail(), df.shape)
+
                 
                 # Display similar titles
                 if similar_titles:
