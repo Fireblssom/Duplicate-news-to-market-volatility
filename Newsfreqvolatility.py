@@ -20,6 +20,7 @@ def highlight_similar_titles(titles, publishers, threshold=35):
     return highlighted_titles
 
 
+# Modify the `get_duplicate_news` function to fetch and pass the publisher data
 def get_duplicate_news(start, end, threshold=35):
     news_api = GNews()
     news_api.start_date = (start.year, start.month, start.day)
@@ -40,7 +41,9 @@ def get_duplicate_news(start, end, threshold=35):
 
     similar_titles_display = []  # Store titles with similarities to display
 
-    for date, (titles, publishers) in zip(daily_titles.items(), daily_publishers.items()):
+    for date in daily_titles.index:
+        titles = daily_titles[date]
+        publishers = daily_publishers[date]
         count = 0
         for i in range(len(titles)):
             for j in range(i + 1, len(titles)):
@@ -53,6 +56,7 @@ def get_duplicate_news(start, end, threshold=35):
 
     all_days = pd.date_range(start, end)
     return pd.Series([duplicate_counts.get(day.date(), 0) for day in all_days], index=all_days), similar_titles_display
+
 
 
 # Function to calculate Bollinger Bands volatility
