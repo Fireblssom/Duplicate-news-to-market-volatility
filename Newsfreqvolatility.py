@@ -151,8 +151,22 @@ model_type = st.sidebar.selectbox(
 
 # Parameters for the selected model
 window = st.sidebar.slider("Rolling Window (Days)", min_value=5, max_value=100, value=20)
+
+# Conditional inputs based on selected volatility model
 if model_type == "Bollinger Bands":
+    
     multiplier = st.sidebar.slider("Bollinger Bands Multiplier", min_value=1.0, max_value=3.0, value=2.0, step=0.1)
+elif model_type == "Standard Deviation of Returns":
+
+    pass
+elif model_type == "Average True Range (ATR)":
+  
+    pass
+elif model_type == "Historical Volatility (HV)":
+
+    pass
+
+
 
 if start > end:
     st.warning("Start date must be before end date.")
