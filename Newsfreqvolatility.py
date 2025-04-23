@@ -98,7 +98,7 @@ def create_plot(news_data, volatility_data, chart_type):
     fig.update_layout(
         title='News Redundancy vs S&P 500 Volatility',
         xaxis_title='Date',
-        yaxis_title='Count of Duplicate News',
+        yaxis_title='Duplicate News',
         yaxis2=dict(
             title='S&P 500 Volatility',
             overlaying='y',
@@ -120,8 +120,8 @@ end = st.sidebar.date_input("End", today)
 # Parameters for news similarity threshold
 news_threshold = st.sidebar.slider("News Similarity Threshold", min_value=0, max_value=100, value=35, step=1)
 
-# Volatility model selection (Bollinger Bands here)
-window = st.sidebar.slider("Rolling Window (Days)", min_value=5, max_value=100, value=20)
+# Bollinger bands variable select
+window = st.sidebar.slider("Rolling Window (Days)", min_value=0, max_value=20, value=5)
 num_std = st.sidebar.slider("Number of Standard Deviations for Bollinger Bands", min_value=1, max_value=5, value=2)
 
 if start > end:
@@ -137,9 +137,9 @@ else:
         chart_types.append('Scatter')
 
     if not chart_types:
-        st.warning("Please select at least one chart type.")
+        st.warning("select a chart type.")
 
-    if st.button("Generate Plot"):
+    if st.button("Get Plot"):
         with st.spinner("Loading data..."):
             try:
                 # Fetch and process news and volatility data
