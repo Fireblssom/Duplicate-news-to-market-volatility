@@ -7,7 +7,7 @@ from gnews import GNews
 from rapidfuzz import fuzz
 import plotly.graph_objects as go
 
-# Visually highlights similar article headlines
+# Function to highlight similar parts of the titles
 def highlight_similar_titles(titles, threshold=35):
     highlighted_titles = []
     for i in range(len(titles)):
@@ -17,7 +17,6 @@ def highlight_similar_titles(titles, threshold=35):
                 highlighted = f"<b>{titles[i]}</b> <i>vs</i> <b>{titles[j]}</b> | Similarity: {similarity_score}%"
                 highlighted_titles.append(highlighted)
     return highlighted_titles
-
 
 # Returns a series with the number of fuzzy duplicate news titles per day
 def get_duplicate_news(start, end, threshold=35):
@@ -37,16 +36,21 @@ def get_duplicate_news(start, end, threshold=35):
     daily_titles = df.groupby('published date')['title'].apply(list)
     duplicate_counts = {}
 
+    similar_titles_display = []  # Store titles with similarities to display
+
     for date, titles in daily_titles.items():
         count = 0
         for i in range(len(titles)):
             for j in range(i + 1, len(titles)):
-                if fuzz.token_sort_ratio(titles[i], titles[j]) >= threshold:
+                similarity_score = fuzz.token_sort_ratio(titles[i], titles[j])
+                if similarity_score >= threshold:
                     count += 1
+                    # Highlight similar titles
+                    similar_titles_display.extend(highlight_similar_titles([titles[i], titles[j]], threshold))
         duplicate_counts[date] = count
 
     all_days = pd.date_range(start, end)
-    return pd.Series([duplicate_counts.get(day.date(), 0) for day in all_days], index=all_days)
+    return pd.Series([duplicate_counts.get(day.date(), 0) for day in all_days], index=all_days), similar_titles_display
 
 # Returns rolling 5-day volatility for the S&P 500
 def get_sp500_volatility(start, end):
@@ -98,17 +102,17 @@ end = st.sidebar.date_input("End", today)
 if start > end:
     st.warning("Start date must be before end date.")
 else:
-    # Chart type selection
-    chart_type = None
-    if st.sidebar.checkbox('Line Chart', value=True):
-        chart_type = 'Line'
+    # Chart type selection with checkboxes
+    chart_types = []
+    if st.sidebar.checkbox('Line Chart'):
+        chart_types.append('Line')
     if st.sidebar.checkbox('Bar Chart'):
-        chart_type = 'Bar'
+        chart_types.append('Bar')
     if st.sidebar.checkbox('Scatter Plot'):
-        chart_type = 'Scatter'
+        chart_types.append('Scatter')
 
-    if chart_type is None:
-        st.warning("Please select a chart type.")
+    if not chart_types:
+        st.warning("Please select at least one chart type.")
 
     if st.button("Generate Plot"):
         with st.spinner("Loading data..."):
@@ -116,9 +120,12 @@ else:
                 # Fetch and process news and volatility data
                 news_series, similar_titles = get_duplicate_news(start, end)
                 vol_series = get_sp500_volatility(start, end)
-                # Plot data based on selected chart type
-                chart = create_plot(news_series, vol_series, chart_type)
-                st.plotly_chart(chart)
+                
+                # Generate the plots for each selected chart type
+                for chart_type in chart_types:
+                    st.subheader(f"{chart_type} - News Redundancy vs S&P 500 Volatility")
+                    chart = create_plot(news_series, vol_series, chart_type)
+                    st.plotly_chart(chart)
                 
                 # Display similar titles
                 if similar_titles:
