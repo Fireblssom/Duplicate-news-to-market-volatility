@@ -14,13 +14,7 @@ def highlight_similar_titles(titles, threshold=35):
         for j in range(i + 1, len(titles)):
             similarity_score = fuzz.token_sort_ratio(titles[i], titles[j])
             if similarity_score >= threshold:
-                highlighted = f"""
-                <div style="font-weight: bold; color: #FF6347;">{titles[i]}</div>
-                <div style="color: gray; font-style: italic;">vs</div>
-                <div style="font-weight: bold; color: #FF6347;">{titles[j]}</div>
-                <div style="color: #888888;">Similarity: {similarity_score}%</div>
-                <hr style="border-top: 1px solid #FF6347;">
-                """
+                highlighted = f"<b>{titles[i]}</b> <i>vs</i> <b>{titles[j]}</b> | Similarity: {similarity_score}%"
                 highlighted_titles.append(highlighted)
     return highlighted_titles
 
@@ -91,7 +85,7 @@ def create_plot(news_data, volatility_data, chart_type):
     elif chart_type == 'Bar':
         fig.add_trace(go.Bar(x=volatility_data.index, y=volatility_data.values, name='S&P 500 Volatility', marker=dict(color='blue', opacity=0.5)))
     elif chart_type == 'Scatter':
-        fig.add_trace(go.Scatter(x=volatility_data.index, y=volatility_data.values, mode='markers', name='S&P 500 Volatility', marker=dict(color='blue', symbol='circle', size=8)))
+        fig.add_trace(go.Scatter(x=volatility_data.index, y=volatility_data.values, mode='markers', name='S&P 500 Volatility', marker=dict(color='blue', opacity=0.7)))
 
     fig.update_layout(
         title='News Redundancy vs S&P 500 Volatility',
@@ -149,11 +143,11 @@ else:
                     chart = create_plot(news_series, vol_series, chart_type)
                     st.plotly_chart(chart)
                 
-                # Display similar titles with enhanced aesthetics
+                # Display similar titles with improved styling
                 if similar_titles:
                     st.subheader("Similar Articles Found")
                     for similar_title in similar_titles:
-                        st.markdown(similar_title, unsafe_allow_html=True)
+                        st.markdown(f"### {similar_title}", unsafe_allow_html=True)  # Using header for better separation
                 else:
                     st.write("No similar articles found.")
             except Exception as e:
