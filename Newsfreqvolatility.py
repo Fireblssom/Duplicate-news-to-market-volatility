@@ -3,9 +3,10 @@ import datetime
 import pandas as pd
 import yfinance as yf
 import matplotlib.pyplot as plt
-from gnews import GNews
-from rapidfuzz import fuzz
 import plotly.graph_objects as go
+import numpy as np
+from rapidfuzz import fuzz
+from gnews import GNews
 
 # Function to highlight similar parts of the titles
 def highlight_similar_titles(titles, threshold=35):
@@ -52,11 +53,56 @@ def get_duplicate_news(start, end, threshold=35):
     all_days = pd.date_range(start, end)
     return pd.Series([duplicate_counts.get(day.date(), 0) for day in all_days], index=all_days), similar_titles_display
 
-# Returns rolling 5-day volatility for the S&P 500
-def get_sp500_volatility(start, end):
-    df = yf.download('^GSPC', start=start, end=end, auto_adjust=True)
+# Function to calculate ATR (Average True Range)
+def calculate_atr(df, window=14):
+    df['H-L'] = df['High'] - df['Low']
+    df['H-C'] = abs(df['High'] - df['Close'].shift())
+    df['L-C'] = abs(df['Low'] - df['Close'].shift())
+    df['TR'] = df[['H-L', 'H-C', 'L-C']].max(axis=1)
+    df['ATR'] = df['TR'].rolling(window=window).mean()
+    return df['ATR']
+
+# Function to calculate Historical Volatility (HV)
+def calculate_hv(df, window=20):
     df['Return'] = df['Close'].pct_change()
-    df['Volatility'] = df['Return'].rolling(window=5).std()
+    return df['Return'].rolling(window=window).std() * np.sqrt(252)  # Annualized volatility
+
+# Function to calculate volatility using Bollinger Bands
+def calculate_bollinger_bands(df, window=20, multiplier=2):
+    df['Moving_Avg'] = df['Close'].rolling(window=window).mean()
+    df['Rolling_Std'] = df['Close'].rolling(window=window).std()
+    df['Upper_Band'] = df['Moving_Avg'] + (df['Rolling_Std'] * multiplier)
+    df['Lower_Band'] = df['Moving_Avg'] - (df['Rolling_Std'] * multiplier)
+    df['Volatility'] = (df['Upper_Band'] - df['Lower_Band']) / df['Moving_Avg'] * 100
+    return df['Volatility']
+
+# Placeholder for VIX logic (to be implemented)
+def calculate_vix(df):
+    # Placeholder for VIX model calculation
+    return df['Close'].pct_change().rolling(window=20).std() * 100  # This is a simple stand-in
+
+# Function to fetch and calculate the volatility based on the selected model
+def get_sp500_volatility(start, end, model_type, window=20, multiplier=2):
+    df = yf.download('^GSPC', start=start, end=end, auto_adjust=True)
+    
+    if model_type == 'Standard Deviation of Returns':
+        df['Volatility'] = df['Close'].pct_change().rolling(window=window).std()
+    
+    elif model_type == 'Average True Range (ATR)':
+        df['Volatility'] = calculate_atr(df, window)
+    
+    elif model_type == 'Historical Volatility (HV)':
+        df['Volatility'] = calculate_hv(df, window)
+    
+    elif model_type == 'Bollinger Bands':
+        df['Volatility'] = calculate_bollinger_bands(df, window, multiplier)
+    
+    elif model_type == 'VIX':
+        df['Volatility'] = calculate_vix(df)
+    
+    else:
+        raise ValueError(f"Unknown model type: {model_type}")
+    
     return df['Volatility']
 
 # Creates the combined interactive plot with Plotly
@@ -99,6 +145,20 @@ today = datetime.date.today()
 start = st.sidebar.date_input("Start", today - datetime.timedelta(days=30))
 end = st.sidebar.date_input("End", today)
 
+# Parameters for news similarity threshold
+news_threshold = st.sidebar.slider("News Similarity Threshold", min_value=0, max_value=100, value=35, step=1)
+
+# Volatility model selection
+model_type = st.sidebar.selectbox(
+    "Select Volatility Model", 
+    ["Standard Deviation of Returns", "Average True Range (ATR)", "Historical Volatility (HV)", "Bollinger Bands", "VIX"]
+)
+
+# Parameters for the selected model
+window = st.sidebar.slider("Rolling Window (Days)", min_value=5, max_value=100, value=20)
+if model_type == "Bollinger Bands":
+    multiplier = st.sidebar.slider("Bollinger Bands Multiplier", min_value=1.0, max_value=3.0, value=2.0, step=0.1)
+
 if start > end:
     st.warning("Start date must be before end date.")
 else:
@@ -118,8 +178,8 @@ else:
         with st.spinner("Loading data..."):
             try:
                 # Fetch and process news and volatility data
-                news_series, similar_titles = get_duplicate_news(start, end)
-                vol_series = get_sp500_volatility(start, end)
+                news_series, similar_titles = get_duplicate_news(start, end, news_threshold)
+                vol_series = get_sp500_volatility(start, end, model_type, window, multiplier)
                 
                 # Generate the plots for each selected chart type
                 for chart_type in chart_types:
