@@ -149,12 +149,6 @@ model_type = st.sidebar.selectbox(
     ["Standard Deviation of Returns", "Average True Range (ATR)", "Historical Volatility (HV)", "Bollinger Bands", "VIX"]
 )
 
-# Volatility model selection
-model_type = st.sidebar.selectbox(
-    "Select Volatility Model", 
-    ["Standard Deviation of Returns", "Average True Range (ATR)", "Historical Volatility (HV)", "Bollinger Bands", "VIX"]
-)
-
 # Parameters for the selected model
 window = st.sidebar.slider("Rolling Window (Days)", min_value=0, max_value=100, value=5)
 
