@@ -76,11 +76,6 @@ def calculate_bollinger_bands(df, window=20, multiplier=2):
     df['Volatility'] = (df['Upper_Band'] - df['Lower_Band']) / df['Moving_Avg'] * 100
     return df['Volatility']
 
-# Placeholder for VIX logic (to be implemented)
-def calculate_vix(df):
-    # Placeholder for VIX model calculation
-    return df['Close'].pct_change().rolling(window=20).std() * 100  # This is a simple stand-in
-
 # Function to fetch and calculate the volatility based on the selected model
 def get_sp500_volatility(start, end, model_type, window=20, multiplier=2):
     df = yf.download('^GSPC', start=start, end=end, auto_adjust=True)
