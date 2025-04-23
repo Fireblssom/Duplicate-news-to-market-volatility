@@ -7,20 +7,18 @@ import numpy as np
 from rapidfuzz import fuzz
 from gnews import GNews
 
-# Function to highlight similar parts of the titles and publishers
 def highlight_similar_titles(titles, publishers, links, threshold=35):
     highlighted_titles = []
     for i in range(len(titles)):
         for j in range(i + 1, len(titles)):
             similarity_score = fuzz.token_sort_ratio(titles[i], titles[j])
             if similarity_score >= threshold:
-                # Adjust the HTML to make the publisher bold and include working links
                 highlighted = f"<h3><b>{publishers[i]}</b></h3><h4><a href='{links[i]}' target='_blank'>{titles[i]}</a></h4> <h3><b>{publishers[j]}</b></h3><h4><a href='{links[j]}' target='_blank'>{titles[j]}</a></h4> | Similarity: {similarity_score}%"
                 highlighted_titles.append(highlighted)
     return highlighted_titles
 
 
-# Modify the `get_duplicate_news` function to fetch and pass the publisher data
+
 def get_duplicate_news(start, end, threshold=35):
     news_api = GNews()
     news_api.start_date = (start.year, start.month, start.day)
@@ -31,6 +29,11 @@ def get_duplicate_news(start, end, threshold=35):
     if not raw_results:
         raise Exception("No news data found for given range.")
 
+    # Extract only titles, publishers, and URLs
+    titles = [result['title'] for result in raw_results]
+    publishers = [result['publisher'] for result in raw_results]
+    links = [result['url'] for result in raw_results]
+    
     df = pd.DataFrame(raw_results)
     df['published date'] = pd.to_datetime(df['published date']).dt.date
     df = df[(df['published date'] >= start) & (df['published date'] <= end)]
@@ -60,29 +63,29 @@ def get_duplicate_news(start, end, threshold=35):
     return pd.Series([duplicate_counts.get(day.date(), 0) for day in all_days], index=all_days), similar_titles_display
 
 
-# Function to calculate Bollinger Bands volatility
+
+
 def calculate_bollinger_bands_volatility(df, window=20, num_std=2):
     df['SMA'] = df['Close'].rolling(window=window).mean()
     df['std_dev'] = df['Close'].rolling(window=window).std()
     df['Upper Band'] = df['SMA'] + (df['std_dev'] * num_std)
     df['Lower Band'] = df['SMA'] - (df['std_dev'] * num_std)
-    df['Volatility'] = df['Upper Band'] - df['Lower Band']  # Volatility is the width between the bands
+    df['Volatility'] = df['Upper Band'] - df['Lower Band'] 
     return df['Volatility']
 
-# Function to fetch and calculate the volatility based on Bollinger Bands
+
 def get_sp500_volatility(start, end, window=20, num_std=2):
     df = yf.download('^GSPC', start=start, end=end, auto_adjust=True)
     
-    # Calculate the Bollinger Bands volatility
+   
     df['Volatility'] = calculate_bollinger_bands_volatility(df, window, num_std)
     
     return df['Volatility']
 
-# Creates the combined interactive plot with Plotly
+
 def create_plot(news_data, volatility_data, chart_type):
     fig = go.Figure()
 
-    # Add news duplicates plot based on selected chart type
     if chart_type == 'Line':
         fig.add_trace(go.Scatter(x=news_data.index, y=news_data.values, mode='lines', name='Duplicate News', line=dict(color='red')))
     elif chart_type == 'Bar':
@@ -90,7 +93,7 @@ def create_plot(news_data, volatility_data, chart_type):
     elif chart_type == 'Scatter':
         fig.add_trace(go.Scatter(x=news_data.index, y=news_data.values, mode='markers', name='Duplicate News', marker=dict(color='red')))
 
-    # Add volatility plot based on selected chart type
+
     if chart_type == 'Line':
         fig.add_trace(go.Scatter(x=volatility_data.index, y=volatility_data.values, mode='lines', name='S&P 500 Volatility', line=dict(color='blue', dash='dot')))
     elif chart_type == 'Bar':
@@ -110,7 +113,6 @@ def create_plot(news_data, volatility_data, chart_type):
     )
     return fig
 
-# Streamlit interface
 st.title("News Redundancy vs S&P 500 Volatility")
 
 st.sidebar.header("Date Range")
@@ -118,17 +120,17 @@ today = datetime.date.today()
 start = st.sidebar.date_input("Start", today - datetime.timedelta(days=30))
 end = st.sidebar.date_input("End", today)
 
-# Parameters for news similarity threshold
+
 news_threshold = st.sidebar.slider("News Similarity Threshold", min_value=0, max_value=100, value=35, step=1)
 
-# Bollinger bands variable select
+
 window = st.sidebar.slider("Rolling Window (Days)", min_value=0, max_value=20, value=5)
 num_std = st.sidebar.slider("Number of Standard Deviations for Bollinger Bands", min_value=1, max_value=5, value=2)
 
 if start > end:
     st.warning("Start date must be before end date.")
 else:
-    # Chart type selection with checkboxes
+
     chart_types = []
     if st.sidebar.checkbox('Line Chart'):
         chart_types.append('Line')
@@ -143,17 +145,16 @@ else:
     if st.button("Get Plot"):
         with st.spinner("Loading data..."):
             try:
-                # Fetch and process news and volatility data
+           
                 news_series, similar_titles = get_duplicate_news(start, end, news_threshold)
                 vol_series = get_sp500_volatility(start, end, window, num_std)
-                
-                # Generate the plots for each selected chart type
+               
                 for chart_type in chart_types:
                     st.subheader(f"{chart_type} - News Redundancy vs S&P 500 Volatility")
                     chart = create_plot(news_series, vol_series, chart_type)
                     st.plotly_chart(chart)
                 
-                # Display similar titles
+
                 if similar_titles:
                     st.subheader("Similar Articles Found")
                     for similar_title in similar_titles:
