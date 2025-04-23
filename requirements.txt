@@ -7,3 +7,4 @@ gnews
 rapidfuzz
 plotly
 streamlit
+yfinance
