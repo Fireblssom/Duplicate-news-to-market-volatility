@@ -78,8 +78,7 @@ else:
                 chart = create_plot(news_series, vol_series)
                 st.pyplot(chart)
                 st.markdown("""
-                    **Explanation of the Axes**:
-                    - **X-axis**: Date range (from start date to end date). It shows the timeline of the data.
+                    **Frequency of similar news articles VS Market Volatility**:
                     - **Left Y-axis (Red)**: The number of duplicate news articles on a given day. Higher values indicate more redundancy in news stories.
                     - **Right Y-axis (Blue)**: The rolling 5-day volatility of the S&P 500 index, representing market price fluctuations over the selected period.
                 """)
