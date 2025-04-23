@@ -7,18 +7,19 @@ import numpy as np
 from rapidfuzz import fuzz
 from gnews import GNews
 
-# Function to highlight similar parts of the titles
-def highlight_similar_titles(titles, threshold=35):
+# Function to highlight similar parts of the titles and publishers
+def highlight_similar_titles(titles, publishers, threshold=35):
     highlighted_titles = []
     for i in range(len(titles)):
         for j in range(i + 1, len(titles)):
             similarity_score = fuzz.token_sort_ratio(titles[i], titles[j])
             if similarity_score >= threshold:
-                highlighted = f"<b>{titles[i]}</b> <i>vs</i> <b>{titles[j]}</b> | Similarity: {similarity_score}%"
+                # Adjust the HTML to make the publisher bold and use different sizes for titles
+                highlighted = f"<h3><b>{publishers[i]}</b></h3><h4>{titles[i]}</h4> <i>vs</i> <h3><b>{publishers[j]}</b></h3><h4>{titles[j]}</h4> | Similarity: {similarity_score}%"
                 highlighted_titles.append(highlighted)
     return highlighted_titles
 
-# Returns a series with the number of fuzzy duplicate news titles per day
+
 def get_duplicate_news(start, end, threshold=35):
     news_api = GNews()
     news_api.start_date = (start.year, start.month, start.day)
@@ -34,23 +35,25 @@ def get_duplicate_news(start, end, threshold=35):
     df = df[(df['published date'] >= start) & (df['published date'] <= end)]
 
     daily_titles = df.groupby('published date')['title'].apply(list)
+    daily_publishers = df.groupby('published date')['publisher'].apply(list)  # Add publisher data
     duplicate_counts = {}
 
     similar_titles_display = []  # Store titles with similarities to display
 
-    for date, titles in daily_titles.items():
+    for date, (titles, publishers) in zip(daily_titles.items(), daily_publishers.items()):
         count = 0
         for i in range(len(titles)):
             for j in range(i + 1, len(titles)):
                 similarity_score = fuzz.token_sort_ratio(titles[i], titles[j])
                 if similarity_score >= threshold:
                     count += 1
-                    # Highlight similar titles
-                    similar_titles_display.extend(highlight_similar_titles([titles[i], titles[j]], threshold))
+                    # Highlight similar titles and include publisher names
+                    similar_titles_display.extend(highlight_similar_titles([titles[i], titles[j]], [publishers[i], publishers[j]], threshold))
         duplicate_counts[date] = count
 
     all_days = pd.date_range(start, end)
     return pd.Series([duplicate_counts.get(day.date(), 0) for day in all_days], index=all_days), similar_titles_display
+
 
 # Function to calculate Bollinger Bands volatility
 def calculate_bollinger_bands_volatility(df, window=20, num_std=2):
