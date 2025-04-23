@@ -1,7 +1,7 @@
 import streamlit as st
 import datetime
 import pandas as pd
-import pandas_datareader.data as web
+import yfinance as yf
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import numpy as np
@@ -76,10 +76,14 @@ def calculate_bollinger_bands(df, window=20, multiplier=2):
     df['Volatility'] = (df['Upper_Band'] - df['Lower_Band']) / df['Moving_Avg'] * 100
     return df['Volatility']
 
+# Placeholder for VIX logic (to be implemented)
+def calculate_vix(df):
+    # Placeholder for VIX model calculation
+    return df['Close'].pct_change().rolling(window=20).std() * 100  # This is a simple stand-in
+
 # Function to fetch and calculate the volatility based on the selected model
 def get_sp500_volatility(start, end, model_type, window=20, multiplier=2):
-    df = web.DataReader('^GSPC', 'yahoo', start, end)
-
+    df = yf.download('^GSPC', start=start, end=end, auto_adjust=True)
     
     if model_type == 'Standard Deviation of Returns':
         df['Volatility'] = df['Close'].pct_change().rolling(window=window).std()
@@ -152,22 +156,8 @@ model_type = st.sidebar.selectbox(
 
 # Parameters for the selected model
 window = st.sidebar.slider("Rolling Window (Days)", min_value=5, max_value=100, value=20)
-
-# Conditional inputs based on selected volatility model
 if model_type == "Bollinger Bands":
-    
     multiplier = st.sidebar.slider("Bollinger Bands Multiplier", min_value=1.0, max_value=3.0, value=2.0, step=0.1)
-elif model_type == "Standard Deviation of Returns":
-
-    pass
-elif model_type == "Average True Range (ATR)":
-  
-    pass
-elif model_type == "Historical Volatility (HV)":
-
-    pass
-
-
 
 if start > end:
     st.warning("Start date must be before end date.")
@@ -206,3 +196,4 @@ else:
                     st.write("No similar articles found.")
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
+
