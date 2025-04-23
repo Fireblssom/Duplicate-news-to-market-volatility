@@ -149,22 +149,22 @@ model_type = st.sidebar.selectbox(
     ["Standard Deviation of Returns", "Average True Range (ATR)", "Historical Volatility (HV)", "Bollinger Bands", "VIX"]
 )
 
+# Volatility model selection
+model_type = st.sidebar.selectbox(
+    "Select Volatility Model", 
+    ["Standard Deviation of Returns", "Average True Range (ATR)", "Historical Volatility (HV)", "Bollinger Bands", "VIX"]
+)
+
 # Parameters for the selected model
-window = st.sidebar.slider("Rolling Window (Days)", min_value=5, max_value=100, value=20)
+window = st.sidebar.slider("Rolling Window (Days)", min_value=0, max_value=100, value=5)
 
 # Conditional inputs based on selected volatility model
 if model_type == "Bollinger Bands":
-    
     multiplier = st.sidebar.slider("Bollinger Bands Multiplier", min_value=1.0, max_value=3.0, value=2.0, step=0.1)
-elif model_type == "Standard Deviation of Returns":
+else:
+    # Set multiplier to None for models that do not use it
+    multiplier = None
 
-    pass
-elif model_type == "Average True Range (ATR)":
-  
-    pass
-elif model_type == "Historical Volatility (HV)":
-
-    pass
 
 
 
