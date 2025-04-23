@@ -1,10 +1,9 @@
-setuptools
-distutils
-pandas
-pandas_datareader
-matplotlib
-gnews
-rapidfuzz
-plotly
 streamlit
+datetime
+pandas
 yfinance
+matplotlib
+plotly
+numpy
+rapidfuzz
+gnews
