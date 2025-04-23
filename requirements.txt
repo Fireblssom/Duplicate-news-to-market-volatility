@@ -1,8 +1,8 @@
 streamlit
 pandas
 pandas_datareader
-yfinance
 matplotlib
 gnews
 rapidfuzz
 plotly
+
