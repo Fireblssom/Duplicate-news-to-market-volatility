@@ -7,11 +7,9 @@ import numpy as np
 from rapidfuzz import fuzz
 from gnews import GNews
 
-# Function to highlight similar parts of the titles with different colors
+# Function to highlight similar parts of the titles
 def highlight_similar_titles(titles, threshold=35):
     highlighted_titles = []
-    color_map = ['#FF6347', '#FF4500', '#32CD32', '#4682B4']  # Define some colors for similarity levels
-    similarity_counter = 0  # Counter to track similarity levels
     for i in range(len(titles)):
         for j in range(i + 1, len(titles)):
             similarity_score = fuzz.token_sort_ratio(titles[i], titles[j])
@@ -24,16 +22,6 @@ def highlight_similar_titles(titles, threshold=35):
                 <hr style="border-top: 1px solid #FF6347;">
                 """
                 highlighted_titles.append(highlighted)
-                # Now highlight specific similar words (similarity score based)
-                for word_i in titles[i].split():
-                    for word_j in titles[j].split():
-                        if fuzz.partial_ratio(word_i, word_j) > 75:
-                            # Highlight the matched words in different colors
-                            highlighted_word_i = f"<span style='color:{color_map[similarity_counter % len(color_map)]}; font-weight: bold;'>{word_i}</span>"
-                            highlighted_word_j = f"<span style='color:{color_map[similarity_counter % len(color_map)]}; font-weight: bold;'>{word_j}</span>"
-                            titles[i] = titles[i].replace(word_i, highlighted_word_i)
-                            titles[j] = titles[j].replace(word_j, highlighted_word_j)
-                similarity_counter += 1
     return highlighted_titles
 
 # Returns a series with the number of fuzzy duplicate news titles per day
@@ -161,20 +149,11 @@ else:
                     chart = create_plot(news_series, vol_series, chart_type)
                     st.plotly_chart(chart)
                 
-                # Display similar titles with enhanced aesthetics and color-coded parts
+                # Display similar titles with enhanced aesthetics
                 if similar_titles:
                     st.subheader("Similar Articles Found")
                     for similar_title in similar_titles:
                         st.markdown(similar_title, unsafe_allow_html=True)
-
-                    # Key for color meaning
-                    st.markdown("""
-                    <div style="font-weight: bold; font-size: 14px; color: #FF6347;">Legend:</div>
-                    <div style="color: #FF6347;">Red: High similarity between words</div>
-                    <div style="color: #FF4500;">Orange: Medium-high similarity between words</div>
-                    <div style="color: #32CD32;">Green: Medium similarity between words</div>
-                    <div style="color: #4682B4;">Blue: Low similarity between words</div>
-                    """, unsafe_allow_html=True)
                 else:
                     st.write("No similar articles found.")
             except Exception as e:
