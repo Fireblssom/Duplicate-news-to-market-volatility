@@ -80,10 +80,6 @@ def calculate_bollinger_bands(df, window=20, multiplier=2):
 def get_sp500_volatility(start, end, model_type, window=20, multiplier=2):
     df = yf.download('^GSPC', start=start, end=end, auto_adjust=True)
     
-    # Check if there's enough data for the specified window
-    if len(df) < window:
-        raise ValueError(f"Not enough data for the selected window size. Available data: {len(df)} rows.")
-    
     if model_type == 'Standard Deviation of Returns':
         df['Volatility'] = df['Close'].pct_change().rolling(window=window).std()
     
@@ -101,9 +97,6 @@ def get_sp500_volatility(start, end, model_type, window=20, multiplier=2):
     
     else:
         raise ValueError(f"Unknown model type: {model_type}")
-    
-    # Drop any rows with NaN values after rolling calculations
-    df = df.dropna(subset=['Volatility'])
     
     return df['Volatility']
 
