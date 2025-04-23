@@ -84,6 +84,8 @@ def create_plot(news_data, volatility_data, chart_type):
         fig.add_trace(go.Scatter(x=volatility_data.index, y=volatility_data.values, mode='lines', name='S&P 500 Volatility', line=dict(color='blue', dash='dot')))
     elif chart_type == 'Bar':
         fig.add_trace(go.Bar(x=volatility_data.index, y=volatility_data.values, name='S&P 500 Volatility', marker=dict(color='blue', opacity=0.5)))
+    elif chart_type == 'Scatter':
+        fig.add_trace(go.Scatter(x=volatility_data.index, y=volatility_data.values, mode='markers', name='S&P 500 Volatility', marker=dict(color='blue', opacity=0.7)))
 
     fig.update_layout(
         title='News Redundancy vs S&P 500 Volatility',
@@ -141,11 +143,11 @@ else:
                     chart = create_plot(news_series, vol_series, chart_type)
                     st.plotly_chart(chart)
                 
-                # Display similar titles
+                # Display similar titles with improved styling
                 if similar_titles:
                     st.subheader("Similar Articles Found")
                     for similar_title in similar_titles:
-                        st.markdown(similar_title, unsafe_allow_html=True)
+                        st.markdown(f"### {similar_title}", unsafe_allow_html=True)  # Using header for better separation
                 else:
                     st.write("No similar articles found.")
             except Exception as e:
