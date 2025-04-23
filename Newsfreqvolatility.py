@@ -7,15 +7,33 @@ import numpy as np
 from rapidfuzz import fuzz
 from gnews import GNews
 
-# Function to highlight similar parts of the titles
+# Function to highlight similar parts of the titles with different colors
 def highlight_similar_titles(titles, threshold=35):
     highlighted_titles = []
+    color_map = ['#FF6347', '#FF4500', '#32CD32', '#4682B4']  # Define some colors for similarity levels
+    similarity_counter = 0  # Counter to track similarity levels
     for i in range(len(titles)):
         for j in range(i + 1, len(titles)):
             similarity_score = fuzz.token_sort_ratio(titles[i], titles[j])
             if similarity_score >= threshold:
-                highlighted = f"<b>{titles[i]}</b> <i>vs</i> <b>{titles[j]}</b> | Similarity: {similarity_score}%"
+                highlighted = f"""
+                <div style="font-weight: bold; color: #FF6347;">{titles[i]}</div>
+                <div style="color: gray; font-style: italic;">vs</div>
+                <div style="font-weight: bold; color: #FF6347;">{titles[j]}</div>
+                <div style="color: #888888;">Similarity: {similarity_score}%</div>
+                <hr style="border-top: 1px solid #FF6347;">
+                """
                 highlighted_titles.append(highlighted)
+                # Now highlight specific similar words (similarity score based)
+                for word_i in titles[i].split():
+                    for word_j in titles[j].split():
+                        if fuzz.partial_ratio(word_i, word_j) > 75:
+                            # Highlight the matched words in different colors
+                            highlighted_word_i = f"<span style='color:{color_map[similarity_counter % len(color_map)]}; font-weight: bold;'>{word_i}</span>"
+                            highlighted_word_j = f"<span style='color:{color_map[similarity_counter % len(color_map)]}; font-weight: bold;'>{word_j}</span>"
+                            titles[i] = titles[i].replace(word_i, highlighted_word_i)
+                            titles[j] = titles[j].replace(word_j, highlighted_word_j)
+                similarity_counter += 1
     return highlighted_titles
 
 # Returns a series with the number of fuzzy duplicate news titles per day
@@ -52,21 +70,18 @@ def get_duplicate_news(start, end, threshold=35):
     all_days = pd.date_range(start, end)
     return pd.Series([duplicate_counts.get(day.date(), 0) for day in all_days], index=all_days), similar_titles_display
 
-# Function to calculate Bollinger Bands volatility
-def calculate_bollinger_bands_volatility(df, window=20, num_std=2):
+# Function to calculate Simple Moving Average (SMA) volatility
+def calculate_sma_volatility(df, window=20):
     df['SMA'] = df['Close'].rolling(window=window).mean()
-    df['std_dev'] = df['Close'].rolling(window=window).std()
-    df['Upper Band'] = df['SMA'] + (df['std_dev'] * num_std)
-    df['Lower Band'] = df['SMA'] - (df['std_dev'] * num_std)
-    df['Volatility'] = df['Upper Band'] - df['Lower Band']  # Volatility is the width between the bands
+    df['Volatility'] = df['Close'].pct_change().rolling(window=window).std() * np.sqrt(252)  # Annualized volatility
     return df['Volatility']
 
-# Function to fetch and calculate the volatility based on Bollinger Bands
-def get_sp500_volatility(start, end, window=20, num_std=2):
+# Function to fetch and calculate the volatility based on the selected model (only SMA here)
+def get_sp500_volatility(start, end, window=20):
     df = yf.download('^GSPC', start=start, end=end, auto_adjust=True)
     
-    # Calculate the Bollinger Bands volatility
-    df['Volatility'] = calculate_bollinger_bands_volatility(df, window, num_std)
+    # Calculate the SMA volatility (Simple Moving Average of returns)
+    df['Volatility'] = calculate_sma_volatility(df, window)
     
     return df['Volatility']
 
@@ -87,6 +102,8 @@ def create_plot(news_data, volatility_data, chart_type):
         fig.add_trace(go.Scatter(x=volatility_data.index, y=volatility_data.values, mode='lines', name='S&P 500 Volatility', line=dict(color='blue', dash='dot')))
     elif chart_type == 'Bar':
         fig.add_trace(go.Bar(x=volatility_data.index, y=volatility_data.values, name='S&P 500 Volatility', marker=dict(color='blue', opacity=0.5)))
+    elif chart_type == 'Scatter':
+        fig.add_trace(go.Scatter(x=volatility_data.index, y=volatility_data.values, mode='markers', name='S&P 500 Volatility', marker=dict(color='blue', symbol='circle', size=8)))
 
     fig.update_layout(
         title='News Redundancy vs S&P 500 Volatility',
@@ -113,9 +130,8 @@ end = st.sidebar.date_input("End", today)
 # Parameters for news similarity threshold
 news_threshold = st.sidebar.slider("News Similarity Threshold", min_value=0, max_value=100, value=35, step=1)
 
-# Volatility model selection (Bollinger Bands here)
+# Volatility model selection (only SMA here)
 window = st.sidebar.slider("Rolling Window (Days)", min_value=5, max_value=100, value=20)
-num_std = st.sidebar.slider("Number of Standard Deviations for Bollinger Bands", min_value=1, max_value=5, value=2)
 
 if start > end:
     st.warning("Start date must be before end date.")
@@ -137,7 +153,7 @@ else:
             try:
                 # Fetch and process news and volatility data
                 news_series, similar_titles = get_duplicate_news(start, end, news_threshold)
-                vol_series = get_sp500_volatility(start, end, window, num_std)
+                vol_series = get_sp500_volatility(start, end, window)
                 
                 # Generate the plots for each selected chart type
                 for chart_type in chart_types:
@@ -145,11 +161,20 @@ else:
                     chart = create_plot(news_series, vol_series, chart_type)
                     st.plotly_chart(chart)
                 
-                # Display similar titles
+                # Display similar titles with enhanced aesthetics and color-coded parts
                 if similar_titles:
                     st.subheader("Similar Articles Found")
                     for similar_title in similar_titles:
                         st.markdown(similar_title, unsafe_allow_html=True)
+
+                    # Key for color meaning
+                    st.markdown("""
+                    <div style="font-weight: bold; font-size: 14px; color: #FF6347;">Legend:</div>
+                    <div style="color: #FF6347;">Red: High similarity between words</div>
+                    <div style="color: #FF4500;">Orange: Medium-high similarity between words</div>
+                    <div style="color: #32CD32;">Green: Medium similarity between words</div>
+                    <div style="color: #4682B4;">Blue: Low similarity between words</div>
+                    """, unsafe_allow_html=True)
                 else:
                     st.write("No similar articles found.")
             except Exception as e:
