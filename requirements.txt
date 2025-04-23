@@ -1,8 +1,9 @@
-streamlit
+setuptools
+distutils
 pandas
 pandas_datareader
 matplotlib
 gnews
 rapidfuzz
 plotly
-
+streamlit
