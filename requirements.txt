@@ -4,4 +4,4 @@ yfinance
 matplotlib
 gnews
 rapidfuzz
-plotly.graph_objects 
+plotly
