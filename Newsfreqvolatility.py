@@ -1,7 +1,7 @@
 import streamlit as st
 import datetime
 import pandas as pd
-import yfinance as yf
+import pandas_datareader.data as web
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
 import numpy as np
@@ -78,7 +78,8 @@ def calculate_bollinger_bands(df, window=20, multiplier=2):
 
 # Function to fetch and calculate the volatility based on the selected model
 def get_sp500_volatility(start, end, model_type, window=20, multiplier=2):
-    df = yf.download('^GSPC', start=start, end=end, auto_adjust=True)
+    df = web.DataReader('^GSPC', 'yahoo', start, end)
+
     
     if model_type == 'Standard Deviation of Returns':
         df['Volatility'] = df['Close'].pct_change().rolling(window=window).std()
